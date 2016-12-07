@@ -3,7 +3,7 @@ import time
 import argparse
 import sys
 import rospy
-import baxterStructure.py as bs
+import baxterStructure as bs
 
 data_out = ach.Channel('ref_channel')
 data_in  = ach.Channel('state_channel')
