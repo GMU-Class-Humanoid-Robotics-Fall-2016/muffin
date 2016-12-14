@@ -7,12 +7,12 @@ import baxterStructure as bs
 import math
 import numpy as np
 
-Open Hubo-Ach feed-forward and feed-back (reference and state) channels
-data_out = ach.Channel('state_channel')
-data_in = ach.Channel('kinematics_channel')
+#Open Hubo-Ach feed-forward and feed-back (reference and state) channels
+data_out = ach.Channel('ref_channel')
+data_in = ach.Channel('state_channel')
 
 state = bs.STATE()
-ref = ha.HUBO_REF()
+ref = bs.STATE()
 
 data_in.flush()
 
@@ -25,27 +25,28 @@ data_in.flush()
 	# return
 
 def assign_thetas(parameter,left_right):
+	#print(parameter)
 	thetas = [0,0,0,0,0,0,0]
 	for i in range(0,7):
 		theta = parameter[i,1]
 		thetas[i] = theta
 	#print(thetas)	
 	if(left_right == 0):
-		ref.arm[bs.LEFT].joint[bs.SY].ref = thetas[bs.SY]
-		ref.arm[bs.LEFT].joint[bs.SP].ref = thetas[bs.SP]
-		ref.arm[bs.LEFT].joint[bs.WY].ref = thetas[bs.WY]
-		ref.arm[bs.LEFT].joint[bs.WP].ref = thetas[bs.WP]
-		ref.arm[bs.LEFT].joint[bs.WY2].ref = thetas[bs.WY2]
-		ref.arm[bs.LEFT].joint[bs.SR].ref = thetas[bs.SR]
-		ref.arm[bs.LEFT].joint[bs.EP].ref = thetas[bs.EP]
+		ref.arm[bs.LEFT].joint[bs.SY].ref = -1 * thetas[bs.SY]
+		ref.arm[bs.LEFT].joint[bs.SP].ref = -1 * thetas[bs.SP]
+		ref.arm[bs.LEFT].joint[bs.WY].ref = -1 * thetas[bs.WY]
+		ref.arm[bs.LEFT].joint[bs.WP].ref = -1 * thetas[bs.WP]
+		ref.arm[bs.LEFT].joint[bs.WY2].ref = -1 * thetas[bs.WY2]
+		ref.arm[bs.LEFT].joint[bs.SR].ref = -1 * thetas[bs.SR]
+		ref.arm[bs.LEFT].joint[bs.EP].ref = -1 * thetas[bs.EP]
 	else:
-		ref.arm[bs.RIGHT].joint[bs.SY].ref = thetas[bs.SY]
-		ref.arm[bs.RIGHT].joint[bs.SP].ref = thetas[bs.SP]
-		ref.arm[bs.RIGHT].joint[bs.WY].ref = thetas[bs.WY]
-		ref.arm[bs.RIGHT].joint[bs.WP].ref = thetas[bs.WP]
-		ref.arm[bs.RIGHT].joint[bs.WY2].ref = thetas[bs.WY2]
-		ref.arm[bs.RIGHT].joint[bs.SR].ref = thetas[bs.SR]
-		ref.arm[bs.RIGHT].joint[bs.EP].ref = thetas[bs.EP]
+		ref.arm[bs.RIGHT].joint[bs.SY].ref = -1 * thetas[bs.SY]
+		ref.arm[bs.RIGHT].joint[bs.SP].ref = -1 * thetas[bs.SP]
+		ref.arm[bs.RIGHT].joint[bs.WY].ref = -1 * thetas[bs.WY]
+		ref.arm[bs.RIGHT].joint[bs.WP].ref = -1 * thetas[bs.WP]
+		ref.arm[bs.RIGHT].joint[bs.WY2].ref = -1 * thetas[bs.WY2]
+		ref.arm[bs.RIGHT].joint[bs.SR].ref = -1 * thetas[bs.SR]
+		ref.arm[bs.RIGHT].joint[bs.EP].ref = -1 * thetas[bs.EP]
 	
 def transformCalculate(parameter):
 	d = parameter[0]
@@ -73,7 +74,7 @@ def inverse_kinematics(e, parameters):
 	dimension = 3
 	
 	parameters[:,1] = np.array([0,0,0,0,0,0,0])	
-	print(parameters)
+	#print(parameters)
 	
 	initial_position = np.empty_like(e)
 	initial_position[:] = e
@@ -81,7 +82,7 @@ def inverse_kinematics(e, parameters):
 	intended_position[:] = e
 	final_position = forward_kinematics(parameters)
 	iterval = 0
-	while(np.sqrt((intended_position-final_position).conj().transpose().dot((intended_position-final_position))) > 2):
+	while(np.sqrt((intended_position-final_position).conj().transpose().dot((intended_position-final_position))) > 1):
 		Jacobian = np.zeros((3,max(np.shape(parameters[:,0]))))
 		joints = 7
 		parameters_new = np.empty_like(
@@ -114,27 +115,52 @@ def inverse_kinematics(e, parameters):
 
 np.set_printoptions(suppress=True)
 initial_params = np.array([[0.069,0,0.2703,-1.571],
-							[0,0,1.82,1.571],
-							[0.069,0,0.6,-1.571],
-							[0,0,0,1.571],
-							[0.01,0,0.3743,-1.571],
-							[0,0,0,1.571],
-							[0,0,0.2295,0]])
+			   [0,0,1.82,1.571],
+			   [0.069,0,0.6,-1.571],
+			   [0,0,0,1.571],
+			   [0.01,0,0.3743,-1.571],
+			   [0,0,0,1.571],
+			   [0,0,0.2295,0]])
 #assign_thetas(initial_params)
 init_e = forward_kinematics(initial_params)
-print(init_e)
+#print(init_e)
 
-left_goal_one = np.array([0.0,0,3.0])
+left_goal_one = np.array([1.97,-0.16,-0.12])
 params = inverse_kinematics(left_goal_one, initial_params)
 e_check = forward_kinematics(params)
+print("end_effector_goal")
 print(e_check)
 #assign_thetas(params,0)
 #assign_thetas(params,1)
 #time.sleep(10)
 
 while True:
-	[statuss,framesizes] = data_in.get(state,wait=True,last=True)
+	[statuss,framesizes] = data_in.get(state,wait=False,last=True)
+	#print"here"
+	#print state.arm[bs.LEFT].joint[bs.WY2].pos
+	#print state.arm[bs.RIGHT].joint[bs.WY2].pos
+	params_l = np.array([[0.069,state.arm[bs.LEFT].joint[bs.SY].pos,0.2703,-1.571],
+			   [0,state.arm[bs.LEFT].joint[bs.SP].pos,1.82,1.571],
+			   [0.069,state.arm[bs.LEFT].joint[bs.WY].pos,0.6,-1.571],
+			   [0,state.arm[bs.LEFT].joint[bs.WP].pos,0,1.571],
+			   [0.01,state.arm[bs.LEFT].joint[bs.WY2].pos,0.3743,-1.571],
+			   [0,0,state.arm[bs.LEFT].joint[bs.SR].pos,1.571],
+			   [0,state.arm[bs.LEFT].joint[bs.EP].pos,0.2295,0]])
+	params_r = np.array([[0.069,state.arm[bs.RIGHT].joint[bs.SY].pos,0.2703,-1.571],
+			   [0,state.arm[bs.RIGHT].joint[bs.SP].pos,1.82,1.571],
+			   [0.069,state.arm[bs.RIGHT].joint[bs.WY].pos,0.6,-1.571],
+			   [0,state.arm[bs.RIGHT].joint[bs.WP].pos,0,1.571],
+			   [0.01,state.arm[bs.RIGHT].joint[bs.WY2].pos,0.3743,-1.571],
+			   [0,0,state.arm[bs.RIGHT].joint[bs.SR].pos,1.571],
+			   [0,state.arm[bs.RIGHT].joint[bs.EP].pos,0.2295,0]])
+	e_l = forward_kinematics(params_l)
+	e_r = forward_kinematics(params_r)
+	print("end-effector left")
+	print(e_l)
+	print("end-effector right")
+	print(e_r)
 	assign_thetas(params,0)
+	assign_thetas(params,1)
 	data_out.put(ref)
 	time.sleep(10)
 	

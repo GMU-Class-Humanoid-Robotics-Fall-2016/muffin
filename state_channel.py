@@ -3,10 +3,12 @@ import time
 import argparse
 import sys
 import rospy
+import baxter_interface as bi
 import baxterStructure as bs
+from ctypes import *
 
-data_out = ach.Channel('ref_channel')
-data_in  = ach.Channel('state_channel')
+data_out = ach.Channel('state_channel')
+data_in  = ach.Channel('ref_channel')
 
 state = bs.STATE()
 ref   = bs.STATE()
@@ -65,9 +67,10 @@ def getState(state,ref,left,right):
   return state2
 
 while True:
-   [statuss, framesizes] = data_in.get(state,wait=False,last=False)
-   bs.moveArm(ref,bs.RIGHT,right)
-   bs.moveArm(ref,bs.LEFT,left)
+   [statuss, framesizes] = data_in.get(ref,wait=False,last=True)
+   print 'ref'
+   moveArm(ref,bs.RIGHT,right)
+   moveArm(ref,bs.LEFT,left)
    state = getState(state,ref,left,right)
    data_out.put(state)
-   time.sleep(20)
+   time.sleep(10)   
